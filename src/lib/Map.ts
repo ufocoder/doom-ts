@@ -1,3 +1,4 @@
+import Renderer from "./Renderer";
 import { Linedef, Vertex } from "./DataTypes";
 
 export default class Map {
@@ -39,5 +40,24 @@ export default class Map {
 
   public addLinedef(linedef: Linedef) {
     this.linedef.push(linedef);
+  }
+
+  renderAutoMap(renderer: Renderer) {
+    let iXShift = this.XMin - 100;
+    let iYShift = this.YMin - 500;
+
+    let iRenderXSize = renderer.width;
+    let iRenderYSize = renderer.height;    
+
+    for (const linedef of this.linedef) {
+      const vStart = this.vertexes[linedef.startVertex];
+      const vEnd = this.vertexes[linedef.endVertex];
+      const x1 = (vStart.x - iXShift) / this.autoMapScaleFactor;
+      const y1 = iRenderYSize - (vStart.y - iYShift) / this.autoMapScaleFactor;
+      const x2 = (vEnd.x - iXShift) / this.autoMapScaleFactor;
+      const y2 = iRenderYSize - (vEnd.y - iYShift) / this.autoMapScaleFactor;
+
+      renderer.drawLine(x1, y1, x2, y2, "black");
+    }
   }
 }

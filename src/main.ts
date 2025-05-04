@@ -1,14 +1,20 @@
+import createLoop from "./browser/loop";
+import Game from "./lib/Game";
 
-import Map from "./lib/Map";
-import WADLoader from "./lib/WADLoader";
-
-const WADUrl = import.meta.env.BASE_URL + 'DOOM.WAD';
+const container = document.getElementById('app');
 
 (async function () {
-  const wadloader = new WADLoader(WADUrl);
-  const map = new Map("E1M1");
+    const game = new Game(container!);
 
-  await wadloader.loadWadFile();
+    await game.init();
 
-  wadloader.loadMapData(map);
+    const loop = createLoop((delta) => {
+      if (game.isOver()) {
+        loop.pause();
+      }
+      game.update();
+      game.render(delta);
+    });
+
+    loop.play();
 })();
