@@ -46,7 +46,6 @@ export default class Map {
     let iXShift = this.XMin - 100;
     let iYShift = this.YMin - 500;
 
-    let iRenderXSize = renderer.width;
     let iRenderYSize = renderer.height;    
 
     for (const linedef of this.linedef) {
