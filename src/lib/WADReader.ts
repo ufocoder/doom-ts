@@ -1,11 +1,19 @@
-import { Header, Directory, Linedef, Vertex } from "./DataTypes";
+import {
+  Header,
+  Directory,
+  Linedef,
+  Vertex,
+  Thing,
+  Subsector,
+  Seg,
+} from "./DataTypes";
 
 const decoder = new TextDecoder("utf-8");
 
 function dataViewtoString(view: DataView, offset: number, length: number) {
   const buffer = view.buffer.slice(offset, offset + length) as ArrayBuffer;
-  return decoder.decode(buffer).replace(/\x00+$/g, '');
-} 
+  return decoder.decode(buffer).replace(/\x00+$/g, "");
+}
 
 export default class WADReader {
   dataView!: DataView;
@@ -26,30 +34,80 @@ export default class WADReader {
     };
   }
 
-  public readDirectory(directoryOffset: number): Directory {
+  public readDirectory(offset: number): Directory {
     return {
-      lumpOffset: this.dataView.getUint32(directoryOffset, true),
-      lumpSize: this.dataView.getUint32(directoryOffset + 4, true),
-      lumpName: dataViewtoString(this.dataView, directoryOffset + 8, 8),
+      lumpOffset: this.dataView.getUint32(offset, true),
+      lumpSize: this.dataView.getUint32(offset + 4, true),
+      lumpName: dataViewtoString(this.dataView, offset + 8, 8),
     };
   }
 
-  public readVertexData(vertexOffset: number): Vertex {
+  public readVertexData(offset: number): Vertex {
     return {
-      x: this.dataView.getInt16(vertexOffset, true),
-      y: this.dataView.getInt16(vertexOffset + 2, true),
+      x: this.dataView.getInt16(offset, true),
+      y: this.dataView.getInt16(offset + 2, true),
     };
   }
 
-  public readLinedefData(linedefOffset: number): Linedef {
+  public readLinedefData(offset: number): Linedef {
     return {
-      startVertex: this.dataView.getUint16(linedefOffset, true),
-      endVertex: this.dataView.getUint16(linedefOffset + 2, true),
-      flags: this.dataView.getUint16(linedefOffset + 4, true),
-      lineType: this.dataView.getUint16(linedefOffset + 6, true),
-      sectorTag: this.dataView.getUint16(linedefOffset + 8, true),
-      rightSidedef: this.dataView.getUint16(linedefOffset + 10, true),
-      leftSidedef: this.dataView.getUint16(linedefOffset + 12, true),
+      startVertexID: this.dataView.getUint16(offset, true),
+      endVertexID: this.dataView.getUint16(offset + 2, true),
+      flags: this.dataView.getUint16(offset + 4, true),
+      lineType: this.dataView.getUint16(offset + 6, true),
+      sectorTag: this.dataView.getUint16(offset + 8, true),
+      rightSidedef: this.dataView.getUint16(offset + 10, true),
+      leftSidedef: this.dataView.getUint16(offset + 12, true),
+    };
+  }
+
+  public readThingData(offset: number): Thing {
+    return {
+      x: this.dataView.getInt16(offset, true),
+      y: this.dataView.getInt16(offset + 2, true),
+      angle: this.dataView.getUint16(offset + 4, true),
+      type: this.dataView.getUint16(offset + 6, true),
+      flags: this.dataView.getUint16(offset + 8, true),
+    };
+  }
+
+  public readNodeData(offset: number) {
+    return {
+      x: this.dataView.getInt16(offset, true),
+      y: this.dataView.getInt16(offset + 2, true),
+      changeX: this.dataView.getInt16(offset + 4, true),
+      changeY: this.dataView.getInt16(offset + 6, true),
+
+      rightBoxTop: this.dataView.getInt16(offset + 8, true),
+      rightBoxBottom: this.dataView.getInt16(offset + 10, true),
+      rightBoxLeft: this.dataView.getInt16(offset + 12, true),
+      rightBoxRight: this.dataView.getInt16(offset + 14, true),
+
+      leftBoxTop: this.dataView.getInt16(offset + 16, true),
+      leftBoxBottom: this.dataView.getInt16(offset + 18, true),
+      leftBoxLeft: this.dataView.getInt16(offset + 20, true),
+      leftBoxRight: this.dataView.getInt16(offset + 22, true),
+
+      rightChildID: this.dataView.getUint16(offset + 24, true),
+      leftChildID: this.dataView.getUint16(offset + 26, true),
+    };
+  }
+
+  readSubsectorData(offset: number): Subsector {
+    return {
+      segCount: this.dataView.getUint16(offset, true),
+      firstSegID: this.dataView.getUint16(offset + 2, true),
+    };
+  }
+
+  readSegData(offset: number): Seg {
+    return {
+      startVertexID: this.dataView.getUint16(offset, true),
+      endVertexID: this.dataView.getUint16(offset + 2, true),
+      angle: this.dataView.getUint16(offset + 4, true),
+      linedefID: this.dataView.getUint16(offset + 6, true),
+      direction: this.dataView.getUint16(offset + 8, true),
+      offset: this.dataView.getUint16(offset + 10, true),
     };
   }
 }

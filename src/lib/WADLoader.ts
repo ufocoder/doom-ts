@@ -1,8 +1,12 @@
 import {
   EMAPLUMPSINDEX,
   Directory,
+  thingsSizeInBytes,
   linedefSizeInBytes,
   vertexSizeInBytes,
+  nodeSizeInBytes,
+  subsectorSizeInBytes,
+  segSizeInBytes,
 } from "./DataTypes";
 import Map from "./Map";
 import WADReader from "./WADReader";
@@ -62,6 +66,18 @@ export default class WADLoader {
     if (!this.readMapLinedef(map)) {
       return false;
     }
+    if (!this.readMapThing(map)) {
+      return false;
+    }
+    if (!this.readMapNodes(map)) {
+      return false;
+    }
+    if (!this.readMapSubsectors(map)) {
+      return false;
+    }
+    if (!this.readMapSegs(map)) {
+      return false;
+    }
     return true;
   }
 
@@ -109,6 +125,102 @@ export default class WADLoader {
       const offset =
         this.directories[mapIndex].lumpOffset + i * linedefSizeInBytes;
       map.addLinedef(this.reader.readLinedefData(offset));
+    }
+
+    return true;
+  }
+
+  private readMapThing(map: Map) {
+    let mapIndex = this.findMapIndex(map);
+
+    if (mapIndex === -1) {
+      return false;
+    }
+
+    mapIndex += EMAPLUMPSINDEX.eTHINGS;
+
+    if (this.directories[mapIndex].lumpName !== "THINGS") {
+      return false;
+    }
+
+    const thingsCount = this.directories[mapIndex].lumpSize / thingsSizeInBytes;
+
+    for (let i = 0; i < thingsCount; ++i) {
+      const offset =
+        this.directories[mapIndex].lumpOffset + i * thingsSizeInBytes;
+      map.addThing(this.reader.readThingData(offset));
+    }
+
+    return true;
+  }
+
+  private readMapNodes(map: Map) {
+    let mapIndex = this.findMapIndex(map);
+
+    if (mapIndex === -1) {
+      return false;
+    }
+
+    mapIndex += EMAPLUMPSINDEX.eNODES;
+
+    if (this.directories[mapIndex].lumpName !== "NODES") {
+      return false;
+    }
+
+    const nodesCount = this.directories[mapIndex].lumpSize / nodeSizeInBytes;
+
+    for (let i = 0; i < nodesCount; i++) {
+      const offset =
+        this.directories[mapIndex].lumpOffset + i * nodeSizeInBytes;
+      map.addNode(this.reader.readNodeData(offset));
+    }
+
+    return true;
+  }
+
+  readMapSubsectors(map: Map) {
+    let mapIndex = this.findMapIndex(map);
+
+    if (mapIndex === -1) {
+      return false;
+    }
+
+    mapIndex += EMAPLUMPSINDEX.eSSECTORS;
+
+    if (this.directories[mapIndex].lumpName !== "SSECTORS") {
+      return false;
+    }
+
+    const subsectorsCount =
+      this.directories[mapIndex].lumpSize / subsectorSizeInBytes;
+
+    for (let i = 0; i < subsectorsCount; i++) {
+      const offset =
+        this.directories[mapIndex].lumpOffset + +i * subsectorSizeInBytes;
+      map.addSubsector(this.reader.readSubsectorData(offset));
+    }
+
+    return true;
+  }
+
+  readMapSegs(map: Map) {
+    let mapIndex = this.findMapIndex(map);
+
+    if (mapIndex === -1) {
+      return false;
+    }
+
+    mapIndex += EMAPLUMPSINDEX.eSEAGS;
+
+    if (this.directories[mapIndex].lumpName !== "SEGS") {
+      return false;
+    }
+
+    const segsCount = this.directories[mapIndex].lumpSize / segSizeInBytes;
+
+    for (let i = 0; i < segsCount; i++) {
+      const offset = this.directories[mapIndex].lumpOffset + i * segSizeInBytes;
+      map.addSeg(this.reader.readSegData(offset));
     }
 
     return true;

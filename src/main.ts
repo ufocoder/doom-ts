@@ -1,4 +1,4 @@
-import createLoop from "./browser/loop";
+import createLoop, { wait } from "./browser/loop";
 import Game from "./lib/Game";
 
 const container = document.getElementById('app');
@@ -8,12 +8,13 @@ const container = document.getElementById('app');
 
     await game.init();
 
-    const loop = createLoop((delta) => {
+    const loop = createLoop(async (delta) => {
       if (game.isOver()) {
         loop.pause();
       }
       game.update();
       game.render(delta);
+      await wait(1_000);
     });
 
     loop.play();

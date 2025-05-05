@@ -1,3 +1,5 @@
+export const SUBSECTORIDENTIFIER = 0x8000;
+
 export interface Vertex {
   x: number;
   y: number;
@@ -6,8 +8,8 @@ export interface Vertex {
 export const vertexSizeInBytes = 4;
 
 export interface Linedef {
-  startVertex: number;
-  endVertex: number;
+  startVertexID: number;
+  endVertexID: number;
   flags: number;
   lineType: number;
   sectorTag: number;
@@ -54,3 +56,53 @@ export enum ELINEDEFFLAGS {
   eDONTDRAW = 64,
   eDRAW = 128,
 }
+
+export const thingsSizeInBytes = 10;
+
+export interface Thing {
+    x: number;
+    y: number;
+    angle: number;
+    type: number;
+    flags: number;
+};
+
+export const nodeSizeInBytes = 28;
+
+export interface Node {
+    x: number;
+    y: number;
+    changeX: number;
+    changeY: number;
+
+    rightBoxTop: number;
+    rightBoxBottom: number;
+    rightBoxLeft: number;
+    rightBoxRight: number;
+
+    leftBoxTop: number;
+    leftBoxBottom: number;
+    leftBoxLeft: number;
+    leftBoxRight: number;
+
+    rightChildID: number;
+    leftChildID: number;
+};
+
+export const subsectorSizeInBytes = 4;
+
+export interface Subsector {
+    segCount: number;
+    firstSegID: number;
+};
+
+export const segSizeInBytes = 12;
+
+export interface Seg {
+    startVertexID: number;
+    endVertexID: number;
+    angle: number;
+    linedefID: number;
+    direction: number;
+    offset: number;
+};
