@@ -56,7 +56,7 @@ export default class Canvas2d implements Renderer {
         this.context.fill();
     }
 
-    public clear () {
+    public clear() {
         this.context.clearRect(0, 0, this.width, this.height);
     }
 }

@@ -3,13 +3,13 @@ import DoomEngine from "./DoomEngine";
 export default class Game {
     engine: DoomEngine;
 
-    constructor(container: HTMLElement) {
-        this.engine = new DoomEngine(container);
+    constructor(container2d: HTMLElement, container3d: HTMLElement) {
+        this.engine = new DoomEngine(container2d, container3d);
     }
 
     async init() {
         await this.engine.init();
-        window.addEventListener('keypress', this.handleWindowKeypress);
+        window.addEventListener('keydown', this.handleWindowKeydown);
     }
 
     isOver() {
@@ -24,11 +24,11 @@ export default class Game {
         this.engine.update();
     }
 
-    handleWindowKeypress = (e: KeyboardEvent) => {
+    handleWindowKeydown = (e: KeyboardEvent) => {
         this.engine.handleKeyPressed(e);
     }
 
     destroy() {
-        window.removeEventListener('keypress', this.handleWindowKeypress);
+        window.removeEventListener('keydown', this.handleWindowKeydown);
     }
 }
