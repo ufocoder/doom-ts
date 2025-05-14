@@ -1,11 +1,13 @@
 import {
   Header,
   Directory,
-  Linedef,
   Vertex,
   Thing,
   Subsector,
-  Seg,
+  WADSector,
+  WADSidedef,
+  WADLinedef,
+  WADSeg,
 } from "./DataTypes";
 
 const decoder = new TextDecoder("utf-8");
@@ -49,7 +51,30 @@ export default class WADReader {
     };
   }
 
-  public readLinedefData(offset: number): Linedef {
+  public readSectorData(offset: number): WADSector {
+    return {
+      floorHeight: this.dataView.getInt16(offset, true),
+      ceilingHeight: this.dataView.getInt16(offset + 2, true),
+      floorTexture: dataViewtoString(this.dataView, offset + 4, 8),
+      ceilingTexture: dataViewtoString(this.dataView, offset + 12, 8),
+      lightlevel: this.dataView.getUint16(offset + 20, true),
+      type: this.dataView.getUint16(offset + 22, true),
+      tag: this.dataView.getUint16(offset + 24, true),
+    };
+  }
+
+  public readSidedefData(offset: number): WADSidedef {
+    return {
+      xOffset: this.dataView.getInt16(offset, true),
+      yOffset: this.dataView.getInt16(offset + 2, true),
+      upperTexture: dataViewtoString(this.dataView, offset + 4, 8),
+      lowerTexture: dataViewtoString(this.dataView, offset + 12, 8),
+      middleTexture: dataViewtoString(this.dataView, offset + 20, 8),
+      sectorID: this.dataView.getUint16(offset + 28, true),
+    };
+  }
+
+  public readLinedefData(offset: number): WADLinedef {
     return {
       startVertexID: this.dataView.getUint16(offset, true),
       endVertexID: this.dataView.getUint16(offset + 2, true),
@@ -100,11 +125,11 @@ export default class WADReader {
     };
   }
 
-  readSegData(offset: number): Seg {
+  readSegData(offset: number): WADSeg {
     return {
       startVertexID: this.dataView.getUint16(offset, true),
       endVertexID: this.dataView.getUint16(offset + 2, true),
-      angle: this.dataView.getUint16(offset + 4, true),
+      slopeAngle: this.dataView.getUint16(offset + 4, true),
       linedefID: this.dataView.getUint16(offset + 6, true),
       direction: this.dataView.getUint16(offset + 8, true),
       offset: this.dataView.getUint16(offset + 10, true),

@@ -5,6 +5,8 @@ import {
   linedefSizeInBytes,
   vertexSizeInBytes,
   nodeSizeInBytes,
+  sectorSizeInBytes,
+  sidedefSizeInBytes,
   subsectorSizeInBytes,
   segSizeInBytes,
 } from "./DataTypes";
@@ -60,13 +62,22 @@ export default class WADLoader {
   }
 
   public loadMapData(map: Map): boolean {
-    if (!this.readMapVertex(map)) {
+    if (!this.readMapVertexes(map)) {
       return false;
     }
-    if (!this.readMapLinedef(map)) {
+    if (!this.readMapSectors(map)) {
+      return false
+    }
+    if (!this.readMapSidedefs(map)) {
+      return false
+    }
+    if (!this.readMapLinedefs(map)) {
       return false;
     }
-    if (!this.readMapThing(map)) {
+    if (!this.readMapSegs(map)) {
+      return false;
+    }
+    if (!this.readMapThings(map)) {
       return false;
     }
     if (!this.readMapNodes(map)) {
@@ -75,13 +86,10 @@ export default class WADLoader {
     if (!this.readMapSubsectors(map)) {
       return false;
     }
-    if (!this.readMapSegs(map)) {
-      return false;
-    }
     return true;
   }
 
-  private readMapVertex(map: Map) {
+  private readMapVertexes(map: Map) {
     let mapIndex = this.findMapIndex(map);
 
     if (mapIndex === -1) {
@@ -105,7 +113,55 @@ export default class WADLoader {
     return true;
   }
 
-  private readMapLinedef(map: Map) {
+  private readMapSectors(map: Map) { 
+    let mapIndex = this.findMapIndex(map);
+
+    if (mapIndex === -1) {
+      return false;
+    }
+
+    mapIndex += EMAPLUMPSINDEX.eSECTORS;
+
+    if (this.directories[mapIndex].lumpName !== "SECTORS") {
+      return false;
+    }
+
+    const sectorCount = this.directories[mapIndex].lumpSize / sectorSizeInBytes;
+
+    for (let i = 0; i < sectorCount; i++) {
+      const offset =
+        this.directories[mapIndex].lumpOffset + i * sectorSizeInBytes;
+      map.addSector(this.reader.readSectorData(offset));
+    }
+
+    return true;
+  }
+
+  private readMapSidedefs(map: Map) { 
+    let mapIndex = this.findMapIndex(map);
+
+    if (mapIndex === -1) {
+      return false;
+    }
+
+    mapIndex += EMAPLUMPSINDEX.eSIDEDDEFS;
+
+    if (this.directories[mapIndex].lumpName !== "SIDEDEFS") {
+      return false;
+    }
+
+    const sidedefCount = this.directories[mapIndex].lumpSize / sidedefSizeInBytes;
+
+    for (let i = 0; i < sidedefCount; i++) {
+      const offset =
+        this.directories[mapIndex].lumpOffset + i * sidedefSizeInBytes;
+      map.addSidedef(this.reader.readSidedefData(offset));
+    }
+
+    return true;
+  }
+
+  private readMapLinedefs(map: Map) {
     let mapIndex = this.findMapIndex(map);
 
     if (mapIndex === -1) {
@@ -130,7 +186,7 @@ export default class WADLoader {
     return true;
   }
 
-  private readMapThing(map: Map) {
+  private readMapThings(map: Map) {
     let mapIndex = this.findMapIndex(map);
 
     if (mapIndex === -1) {
