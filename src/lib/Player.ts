@@ -87,31 +87,33 @@ export default class Player {
       return;
     }
 
-    V1Angle = V1Angle.subtract(this.angle);
-    V2Angle = V2Angle.subtract(this.angle);
+    let V1AngleFromPlayer = V1Angle.subtract(this.angle);
+    let V2AngleFromPlayer = V2Angle.subtract(this.angle);
 
-    const v1Moved = V1Angle.add(this.halfFOV);
+    const v1Moved = V1AngleFromPlayer.add(this.halfFOV);
 
     if (v1Moved.greaterThan(this.FOV)) {
       const v1MovedAngle = v1Moved.subtract(this.FOV);
       if (v1MovedAngle.greaterThanOrEqual(v1ToV2Span)) {
         return;
       }
-      V1Angle = this.halfFOV;
+      V1AngleFromPlayer = this.halfFOV;
     }
 
-    const v2Moved = this.halfFOV.subtract(V2Angle);
+    const v2Moved = this.halfFOV.subtract(V2AngleFromPlayer);
 
     if (v2Moved.greaterThan(this.FOV)) {
-      V2Angle.assign(this.halfFOV.negate());
+      V2AngleFromPlayer.assign(this.halfFOV.negate());
     }
 
-    V1Angle.addAssign(90);
-    V2Angle.addAssign(90);
+    V1AngleFromPlayer.addAssign(90);
+    V2AngleFromPlayer.addAssign(90);
 
     return {
       V1Angle,
       V2Angle,
+      V1AngleFromPlayer,
+      V2AngleFromPlayer
     };
   }
 

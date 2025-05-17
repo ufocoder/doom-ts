@@ -28,7 +28,7 @@ export default class ViewRenderer {
   distancePlayerToScreen: number = 0;
   halfScreenWidth: number = 0;
   halfScreenHeight: number = 0;
-  halfFOV: number = 90;
+  halfFOV: Angle = new Angle(90);
 
   private wallColor: Record<string, string> = {};
   private screenXToAngle: number[] = [];
@@ -49,10 +49,9 @@ export default class ViewRenderer {
   init() {
     this.halfScreenWidth = this.renderer3d.width / 2;
     this.halfScreenHeight = this.renderer3d.height / 2;
-    this.halfFOV = this.player.FOV.getValue() / 2;
-
+    this.halfFOV = new Angle(this.player.FOV.getValue() / 2);
     this.distancePlayerToScreen =
-      this.halfScreenWidth / new Angle(this.halfFOV).getTanValue();
+      this.halfScreenWidth / this.halfFOV.getTanValue();
 
     for (let i = 0; i <= this.renderer3d.width; i++) {
       this.screenXToAngle[i] =
@@ -123,12 +122,12 @@ export default class ViewRenderer {
     this.solidWallRanges = [];
 
     const wallLeftSide: SolidSegmentRange = {
-      xStart: -Infinity,
+      xStart: -Number.MIN_SAFE_INTEGER,
       xEnd: -1,
     };
     const wallRightSide: SolidSegmentRange = {
       xStart: this.renderer3d.width,
-      xEnd: Infinity,
+      xEnd: Number.MAX_SAFE_INTEGER,
     };
 
     this.solidWallRanges.push(wallLeftSide);
@@ -165,97 +164,134 @@ export default class ViewRenderer {
         seg.endVertex
       );
       if (angles) {
-        this.addWallInFOV(seg, angles.V1Angle, angles.V2Angle);
+        this.addWallInFOV(
+          seg,
+          angles.V1Angle,
+          angles.V2Angle,
+          angles.V1AngleFromPlayer,
+          angles.V2AngleFromPlayer
+        );
       }
     }
   }
 
-  addWallInFOV(seg: Seg, V1Angle: Angle, V2Angle: Angle) {
-    const V1XScreen = this.angleToScreen(V1Angle);
-    const V2XScreen = this.angleToScreen(V2Angle);
+  addWallInFOV(
+    seg: Seg,
+    _: Angle,
+    __: Angle,
+    V1AngleFromPlayer: Angle,
+    V2AngleFromPlayer: Angle
+  ) {
+    const V1XScreen = this.angleToScreen(V1AngleFromPlayer);
+    const V2XScreen = this.angleToScreen(V2AngleFromPlayer);
 
     if (V1XScreen == V2XScreen) {
       return;
     }
 
     if (!seg.leftSector) {
-      this.clipSolidWalls(seg, V1XScreen, V2XScreen);
+      this.clipSolidWalls(seg, V1XScreen, V2XScreen); //, V1Angle, V2Angle);
     }
   }
 
-  public clipSolidWalls(seg: Seg, V1XScreen: number, V2XScreen: number): void {
+  public clipSolidWalls(
+    seg: Seg,
+    V1XScreen: number,
+    V2XScreen: number,
+    // V1Angle: Angle,
+    // V2Angle: Angle
+  ): void {
+    if (this.solidWallRanges.length < 2) {
+      return;
+    }
+
     const currentWall: SolidSegmentRange = {
       xStart: V1XScreen,
       xEnd: V2XScreen,
     };
 
-    let foundClipWallIndex = 0;
+    let FoundClipWall = 0;
     while (
-      foundClipWallIndex < this.solidWallRanges.length &&
-      this.solidWallRanges[foundClipWallIndex].xEnd < currentWall.xStart - 1
+      FoundClipWall < this.solidWallRanges.length &&
+      this.solidWallRanges[FoundClipWall].xEnd < currentWall.xStart - 1
     ) {
-      foundClipWallIndex++;
+      FoundClipWall++;
     }
 
-    const foundClipWall = this.solidWallRanges[foundClipWallIndex];
-
-    if (currentWall.xStart < foundClipWall.xStart) {
-      if (currentWall.xEnd < foundClipWall.xStart - 1) {
+    if (currentWall.xStart < this.solidWallRanges[FoundClipWall].xStart) {
+      if (currentWall.xEnd < this.solidWallRanges[FoundClipWall].xStart - 1) {
         // All of the wall is visible, so insert it
-        this.storeWallRange(seg, currentWall.xStart, currentWall.xEnd);
-        this.solidWallRanges.splice(foundClipWallIndex, 0, currentWall);
+        this.storeWallRange(
+          seg,
+          currentWall.xStart,
+          currentWall.xEnd,
+          // V1Angle,
+          // V2Angle
+        );
+        this.solidWallRanges.splice(FoundClipWall, 0, currentWall);
         return;
       }
 
       // The end is already included, just update start
-      this.storeWallRange(seg, currentWall.xStart, foundClipWall.xStart - 1);
-      foundClipWall.xStart = currentWall.xStart;
+      this.storeWallRange(
+        seg,
+        currentWall.xStart,
+        this.solidWallRanges[FoundClipWall].xStart - 1,
+        // V1Angle,
+        // V2Angle
+      );
+      this.solidWallRanges[FoundClipWall].xStart = currentWall.xStart;
     }
 
-    // Current wall is completely covered
-    if (currentWall.xEnd <= foundClipWall.xEnd) {
+    // This part is already occupied
+    if (currentWall.xEnd <= this.solidWallRanges[FoundClipWall].xEnd) {
       return;
     }
 
-    let nextWallIndex = foundClipWallIndex;
-    let nextWall = this.solidWallRanges[nextWallIndex];
+    let nextWall = FoundClipWall;
 
-    while (
-      nextWallIndex + 1 < this.solidWallRanges.length &&
-      currentWall.xEnd >= this.solidWallRanges[nextWallIndex + 1].xStart - 1
-    ) {
+    while (currentWall.xEnd >= this.solidWallRanges[nextWall + 1]?.xStart - 1) {
       // partially clipped by other walls, store each fragment
-      const nextNextWall = this.solidWallRanges[nextWallIndex + 1];
-      this.storeWallRange(seg, nextWall.xEnd + 1, nextNextWall.xStart - 1);
-      nextWallIndex++;
-      nextWall = nextNextWall;
+      this.storeWallRange(
+        seg,
+        this.solidWallRanges[nextWall].xEnd + 1,
+        this.solidWallRanges[nextWall + 1].xStart - 1,
+        // V1Angle,
+        // V2Angle
+      );
+      nextWall++;
 
-      if (currentWall.xEnd <= nextWall.xEnd) {
-        foundClipWall.xEnd = nextWall.xEnd;
-        if (nextWallIndex !== foundClipWallIndex) {
+      if (currentWall.xEnd <= this.solidWallRanges[nextWall].xEnd) {
+        this.solidWallRanges[FoundClipWall].xEnd =
+          this.solidWallRanges[nextWall].xEnd;
+        if (nextWall !== FoundClipWall) {
           this.solidWallRanges.splice(
-            foundClipWallIndex + 1,
-            nextWallIndex - foundClipWallIndex
+            FoundClipWall + 1,
+            nextWall - FoundClipWall
           );
         }
         return;
       }
     }
 
-    this.storeWallRange(seg, nextWall.xEnd + 1, currentWall.xEnd);
-    foundClipWall.xEnd = currentWall.xEnd;
+    this.storeWallRange(
+      seg,
+      this.solidWallRanges[nextWall].xEnd + 1,
+      currentWall.xEnd,
+      // V1Angle,
+      // V2Angle
+    );
+    this.solidWallRanges[FoundClipWall].xEnd = currentWall.xEnd;
 
-    if (nextWallIndex !== foundClipWallIndex) {
-      this.solidWallRanges.splice(
-        foundClipWallIndex + 1,
-        nextWallIndex - foundClipWallIndex
-      );
+    if (nextWall !== FoundClipWall) {
+      this.solidWallRanges.splice(FoundClipWall + 1, nextWall - FoundClipWall);
     }
   }
 
-  storeWallRange(seg: Seg, V1XScreen: number, V2XScreen: number) {
-    this.drawSolidWall(seg, V1XScreen, V2XScreen);
+  private storeWallRange(seg: Seg, V1XScreen: number, V2XScreen: number) { //, V1Angle: Angle, V2Angle: Angle): void {
+    this.calculateWallHeightSimple(seg, V1XScreen, V2XScreen); //, V1Angle, V2Angle);
   }
+
 
   drawSolidWall(visibleSeg: Seg, V1XScreen: number, V2XScreen: number) {
     const color = this.getWallColor(
@@ -272,23 +308,31 @@ export default class ViewRenderer {
     );
   }
 
-  calculateWallHeightSimple(
+  private calculateWallHeightSimple(
     seg: Seg,
     V1XScreen: number,
     V2XScreen: number,
-    V1Angle: Angle,
-    V2Angle: Angle
+    // V1Angle: Angle,
+    // V2Angle: Angle
   ): void {
     let DistanceToV1 = this.player.distanceToPoint(seg.startVertex);
     let DistanceToV2 = this.player.distanceToPoint(seg.endVertex);
 
     // Special Case partial seg on the left
+
+/*
     if (V1XScreen <= 0) {
-      DistanceToV1 = this.partialSeg(seg, V1Angle, V2Angle, DistanceToV1, true);
+      DistanceToV1 = this.partialSeg(
+        seg, 
+        V1Angle, 
+        V2Angle, 
+        DistanceToV1, 
+        true
+      );
     }
 
     // Special Case partial seg on the right
-    if (V2XScreen >= 319) {
+    if (V2XScreen >= 360) {
       DistanceToV2 = this.partialSeg(
         seg,
         V1Angle,
@@ -297,7 +341,7 @@ export default class ViewRenderer {
         false
       );
     }
-
+*/
     const { outCeiling: CeilingV1OnScreen, outFloor: FloorV1OnScreen } =
       this.calculateCeilingFloorHeight(seg, V1XScreen, DistanceToV1);
 
@@ -340,40 +384,38 @@ export default class ViewRenderer {
   }
 
   private calculateCeilingFloorHeight(
-    seg: Seg,
-    VXScreen: number,
-    DistanceToV: number
-  ) {
-    const Ceiling =
-      (seg.rightSector?.ceilingHeight ?? 0) - this.player.getZPosition();
-    const Floor =
-      (seg.rightSector?.floorHeight ?? 0) - this.player.getZPosition();
+    seg: Seg, 
+    VXScreen: number, 
+    DistanceToV: number, 
+)  {
+    const Ceiling = seg.rightSector!.ceilingHeight - this.player.getZPosition();
+    const Floor = seg.rightSector!.floorHeight - this.player.getZPosition();
 
-    const VScreenAngle = this.screenXToAngle[VXScreen];
-    const DistanceToVScreen =
-      this.distancePlayerToScreen / new Angle(VScreenAngle).getCosValue();
+    const VScreenAngle = new Angle(this.screenXToAngle[VXScreen]);
 
-    let outCeiling = (Math.abs(Ceiling) * DistanceToVScreen) / DistanceToV;
-    let outFloor = (Math.abs(Floor) * DistanceToVScreen) / DistanceToV;
+    const DistanceToVScreen = this.distancePlayerToScreen / VScreenAngle.getCosValue();
+
+    let CeilingVOnScreen = (Math.abs(Ceiling) * DistanceToVScreen) / DistanceToV;
+    let FloorVOnScreen = (Math.abs(Floor) * DistanceToVScreen) / DistanceToV;
 
     if (Ceiling > 0) {
-      outCeiling = this.halfScreenHeight - outCeiling;
+        CeilingVOnScreen = this.halfScreenHeight - CeilingVOnScreen;
     } else {
-      outCeiling += this.halfScreenHeight;
+        CeilingVOnScreen += this.halfScreenHeight;
     }
 
     if (Floor > 0) {
-      outFloor = this.halfScreenHeight - outFloor;
+        FloorVOnScreen = this.halfScreenHeight - FloorVOnScreen;
     } else {
-      outFloor += this.halfScreenHeight;
+        FloorVOnScreen += this.halfScreenHeight;
     }
 
     return {
-      outCeiling,
-      outFloor,
-    };
+      outCeiling: CeilingVOnScreen,
+      outFloor: FloorVOnScreen, 
+    }
   }
-
+/*
   private partialSeg(
     seg: Seg,
     V1Angle: Angle,
@@ -407,7 +449,7 @@ export default class ViewRenderer {
     );
     return (DistanceToV * AngleA.getSinValue()) / NewAngleB.getSinValue();
   }
-
+*/
   // utils
 
   isPointOnLeftSide(x: number, y: number, nodeID: number) {
