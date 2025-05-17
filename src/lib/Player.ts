@@ -8,7 +8,7 @@ export default class Player {
   z: number = 40;
   angle: Angle = new Angle(0);
   FOV: Angle = new Angle(90);
-  halfFOV: Angle = new Angle(90 / 2);
+  halfFOV: Angle = new Angle(45);
 
   moveSpeed = 10;
   rotationSpeed = 15;
@@ -83,35 +83,37 @@ export default class Player {
 
     const v1ToV2Span = V1Angle.subtract(V2Angle);
 
-    if (v1ToV2Span.greaterThan(180)) {
+    if (v1ToV2Span.greaterThan(this.FOV.getValue() * 2)) {
       return;
     }
 
-    V1Angle = V1Angle.subtract(this.angle);
-    V2Angle = V2Angle.subtract(this.angle);
+    let V1AngleFromPlayer = V1Angle.subtract(this.angle);
+    let V2AngleFromPlayer = V2Angle.subtract(this.angle);
 
-    const v1Moved = V1Angle.add(this.halfFOV);
+    const v1Moved = V1AngleFromPlayer.add(this.halfFOV);
 
     if (v1Moved.greaterThan(this.FOV)) {
       const v1MovedAngle = v1Moved.subtract(this.FOV);
       if (v1MovedAngle.greaterThanOrEqual(v1ToV2Span)) {
         return;
       }
-      V1Angle = this.halfFOV;
+      V1AngleFromPlayer = this.halfFOV;
     }
 
-    const v2Moved = this.halfFOV.subtract(V2Angle);
+    const v2Moved = this.halfFOV.subtract(V2AngleFromPlayer);
 
     if (v2Moved.greaterThan(this.FOV)) {
-      V2Angle.assign(this.halfFOV.negate());
+      V2AngleFromPlayer.assign(this.halfFOV.negate());
     }
 
-    V1Angle.addAssign(90);
-    V2Angle.addAssign(90);
+    V1AngleFromPlayer.addAssign(this.FOV.getValue());
+    V2AngleFromPlayer.addAssign(this.FOV.getValue());
 
     return {
       V1Angle,
       V2Angle,
+      V1AngleFromPlayer,
+      V2AngleFromPlayer
     };
   }
 
@@ -131,5 +133,13 @@ export default class Player {
 
   rotateRight() {
     this.angle.subtractAssign(0.1875 * this.rotationSpeed);
+  }
+
+  fly() {
+    this.z += 1;
+  }
+
+  sink() {
+    this.z -= 1;
   }
 }

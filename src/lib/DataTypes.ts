@@ -1,3 +1,5 @@
+import { Angle } from "./Angle";
+
 export const SUBSECTORIDENTIFIER = 0x8000;
 
 export const vertexSizeInBytes = 4;
@@ -141,7 +143,7 @@ export interface WADSeg {
 export interface Seg {
   startVertex: Vertex;
   endVertex: Vertex;
-  slopeAngle: number;
+  slopeAngle: Angle;
   linedef: Linedef;
   direction: number;
   offset: number;

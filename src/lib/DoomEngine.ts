@@ -13,8 +13,8 @@ export default class DoomEngine {
   container3d: HTMLElement;
   container2d: HTMLElement;
 
-  renderWidth: number = 640;
-  renderHeight: number = 400;
+  renderWidth: number = 480;
+  renderHeight: number = 300;
   
   renderer2d: Canvas2d;
   renderer3d: Canvas2d;
@@ -74,6 +74,8 @@ export default class DoomEngine {
     this.viewRenderer.init();
     this.player.init(playerThing);
     this.map.init();
+
+    this.viewRenderer.render()
 
     return true;
   }

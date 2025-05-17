@@ -1,3 +1,4 @@
+import { Angle } from "./Angle";
 import {
   Linedef,
   Node,
@@ -106,12 +107,11 @@ export default class Map {
   buildSeg() {
     for (const wadseg of this.WADSegs) {
       const linedef = this.linedefs[wadseg.linedefID];
-
       this.segs.push({
         startVertex: this.vertexes[wadseg.startVertexID],
         endVertex: this.vertexes[wadseg.endVertexID],
         linedef,
-        slopeAngle: wadseg.slopeAngle,
+        slopeAngle: new Angle((wadseg.slopeAngle << 16) * 8.38190317e-8),
         direction: wadseg.direction,
         offset: (wadseg.offset << 16) / (1 << 16),
         rightSector: wadseg.direction
